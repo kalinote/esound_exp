@@ -2,6 +2,9 @@ import math
 import struct
 import wave
 
+import matplotlib.pyplot as plt
+plt.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+
 SAMPLE_RATE = 44100
 BIT_DEPTH = 16
 CHANNELS = 1
@@ -29,33 +32,41 @@ frequencies = {
     "D": 293.665,
 }
 
-def generate_note(note, units):
-    count = units * round(SAMPLE_RATE * 60 / (BPM * 2))
+def plot_boundary(pcm, boundary_index=4, window_ms=5):
+    samples = struct.unpack(f"<{len(pcm)//2}h", pcm)
 
-    if note is None:
-        return b"\x00\x00" * count
+    # 计算音符交界处的采样点位置
+    boundary = sum(
+        units for _, units in melody[:boundary_index]
+    ) * round(SAMPLE_RATE * 60 / (BPM * 2))
 
-    data = bytearray()
+    # 截取交界处前后几毫秒
+    window = int(SAMPLE_RATE * window_ms / 1000)
+    start = boundary - window
+    end = boundary + window
 
-    # 8 毫秒淡入、淡出
-    fade_samples = round(0.008 * SAMPLE_RATE)
+    x = [(i - boundary) / SAMPLE_RATE * 1000 for i in range(start, end)]
+    y = samples[start:end]
 
-    for n in range(count):
-        t = n / SAMPLE_RATE
-        x = AMPLITUDE * math.sin(2 * math.pi * frequencies[note] * t)
+    # 分别绘制交界处两侧的波形
+    plt.figure(figsize=(12, 4))
+    plt.plot(x[:window], y[:window], ".-", markersize=3, label="前一个音符")
+    plt.plot(x[window:], y[window:], ".-", markersize=3, label="后一个音符")
 
-        # 避免音符衔接处波形突变
-        envelope = min(
-            1.0,
-            n / fade_samples,
-            (count - 1 - n) / fade_samples,
-        )
+    # 用红线连接交界处的两个采样点
+    plt.plot(
+        x[window-1:window+1],
+        y[window-1:window+1],
+        "r.-", linewidth=2, markersize=8,
+        label="连接处采样点"
+    )
 
-        x *= envelope
-        sample = round(x * 32767)
-        data.extend(struct.pack("<h", sample))
-
-    return bytes(data)
+    plt.axvline(0, color="red", linestyle="--", alpha=0.5)
+    plt.xlabel("时间 (毫秒)")
+    plt.ylabel("PCM采样点值")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.show()
 
 pcm = bytearray()
 
@@ -68,3 +79,43 @@ with wave.open("symphony_good.wav", "wb") as wav:
     wav.setsampwidth(BIT_DEPTH // 8)
     wav.setframerate(SAMPLE_RATE)
     wav.writeframes(pcm)
+
+
+def plot_boundary(pcm, boundary_index=4, window_ms=5):
+    samples = struct.unpack(f"<{len(pcm)//2}h", pcm)
+
+    # 计算音符交界处的采样点位置
+    boundary = sum(
+        units for _, units in melody[:boundary_index]
+    ) * round(SAMPLE_RATE * 60 / (BPM * 2))
+
+    # 截取交界处前后几毫秒
+    window = int(SAMPLE_RATE * window_ms / 1000)
+    start = boundary - window
+    end = boundary + window
+
+    x = [(i - boundary) / SAMPLE_RATE * 1000 for i in range(start, end)]
+    y = samples[start:end]
+
+    # 分别绘制交界处两侧的波形
+    plt.figure(figsize=(12, 4))
+    plt.plot(x[:window], y[:window], ".-", markersize=3, label="Before")
+    plt.plot(x[window:], y[window:], ".-", markersize=3, label="After")
+
+    # 用红线连接交界处的两个采样点
+    plt.plot(
+        x[window-1:window+1],
+        y[window-1:window+1],
+        "r.-", linewidth=2, markersize=8,
+        label="Boundary"
+    )
+
+    plt.axvline(0, color="red", linestyle="--", alpha=0.5)
+    plt.xlabel("Time relative to boundary (ms)")
+    plt.ylabel("PCM Value")
+    plt.legend()
+    plt.grid(alpha=0.3)
+    plt.show()
+    
+plot_boundary(pcm, boundary_index=4, window_ms=5)
+
