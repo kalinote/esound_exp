@@ -58,8 +58,6 @@ def generate_note(note, units, beat):
     for n in range(count):
         t = n / SAMPLE_RATE
 
-        x = AMPLITUDE * math.sin(2 * math.pi * frequencies[note] * t)
-
         # 线性振幅包络
         envelope = min(
             1.0,
@@ -69,12 +67,8 @@ def generate_note(note, units, beat):
 
         wave_value = sum(a * math.sin(2 * math.pi * k * frequencies[note] * t) for k, a in enumerate(harmonics_coefficients, start=1) if a != 0 and k * frequencies[note] < SAMPLE_RATE / 2)
 
-        # 淡入淡出包络
-        x *= envelope
-        # 力度系数
-        x *= beat
-        # 谐波叠加
-        x *= wave_value
+        # 节拍、线性振幅包络、谐波叠加
+        x = AMPLITUDE * beat * envelope * wave_value
 
         sample = round(x * 32767)
         data.extend(struct.pack("<h", sample))
