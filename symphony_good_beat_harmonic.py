@@ -36,7 +36,7 @@ frequencies = {
     "D": 293.665,
 }
 
-harmonics = [1.0, 0.5, 0.25, 0.125]
+harmonics = [1.0, 0.0, 0.5, 0.0, 0.25]
 
 def generate_note(note, units, beat):
     count = units * round(SAMPLE_RATE * 60 / (BPM * 2))
