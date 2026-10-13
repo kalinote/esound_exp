@@ -89,6 +89,9 @@ with wave.open("symphony_good_beat_harmonic.wav", "wb") as wav:
 
 
 def plot_boundary(pcm, boundary_index=4, window_ms=5):
+    """
+    绘制两个音符交汇处
+    """
     samples = struct.unpack(f"<{len(pcm)//2}h", pcm)
 
     # 计算音符交界处的采样点位置
